@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "33cJZIF3Yaz/C7JrHNVf/WnDmqbcbQGYStFTzKHQaZlVEECLkjiiprTV+DSFpwxtRF1bqfEnAYsmGIrYKMl3wQ==",
+  "dgSpecHash": "94KmAphfqB1hnqdLT6uAeA9q2ZjjW+Xr+5pzpAVwkXUMz+3mlKUeAyP3PEG4JUKo+WSwR+poLaGsYKuLNfDbZA==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Shaked Neeman\\source\\repos\\ShowApp\\ShowApp\\ShowApp.csproj",
+  "projectFilePath": "C:\\Users\\Shaked Neeman\\Source\\Repos\\MamramGo\\ShowApp\\ShowApp.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Shaked Neeman\\.nuget\\packages\\microsoft.csharp\\4.3.0\\microsoft.csharp.4.3.0.nupkg.sha512",
     "C:\\Users\\Shaked Neeman\\.nuget\\packages\\microsoft.management.infrastructure\\1.0.0\\microsoft.management.infrastructure.1.0.0.nupkg.sha512",

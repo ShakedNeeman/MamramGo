@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Shaked Neeman\\source\\repos\\ShowApp\\ShowApp\\ShowApp.csproj": {}
+    "C:\\Users\\Shaked Neeman\\Source\\Repos\\MamramGo\\ShowApp\\ShowApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Shaked Neeman\\source\\repos\\ShowApp\\ShowApp\\ShowApp.csproj": {
+    "C:\\Users\\Shaked Neeman\\Source\\Repos\\MamramGo\\ShowApp\\ShowApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Shaked Neeman\\source\\repos\\ShowApp\\ShowApp\\ShowApp.csproj",
+        "projectUniqueName": "C:\\Users\\Shaked Neeman\\Source\\Repos\\MamramGo\\ShowApp\\ShowApp.csproj",
         "projectName": "ShowApp",
-        "projectPath": "C:\\Users\\Shaked Neeman\\source\\repos\\ShowApp\\ShowApp\\ShowApp.csproj",
+        "projectPath": "C:\\Users\\Shaked Neeman\\Source\\Repos\\MamramGo\\ShowApp\\ShowApp.csproj",
         "packagesPath": "C:\\Users\\Shaked Neeman\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Shaked Neeman\\source\\repos\\ShowApp\\ShowApp\\obj\\",
+        "outputPath": "C:\\Users\\Shaked Neeman\\Source\\Repos\\MamramGo\\ShowApp\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Shaked Neeman\\AppData\\Roaming\\NuGet\\NuGet.Config",

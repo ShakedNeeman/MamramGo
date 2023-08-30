@@ -66,7 +66,6 @@ class Program
 
             // Execute the WMI query and get the result
             ManagementObjectCollection queryCollection = searcher.Get();
-
             // Initialize message and counter
             Console.WriteLine("Result Get-WmiObject -Class Win32_Product | Format-List:");
 
