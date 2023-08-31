@@ -3,59 +3,58 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 
-     class WinApi
+class WinApi
+{
+    [DllImport("msi.dll", CharSet = CharSet.Unicode)]
+    static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
+
+    [DllImport("msi.dll", CharSet = CharSet.Unicode)]
+    static extern int MsiGetProductInfo(string product, string property, StringBuilder valueBuf, ref Int32 len);
+
+    public static void GetAppsUsingAPI()
     {
-        [DllImport("msi.dll", CharSet = CharSet.Unicode)]
-        static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
+        Dictionary<string, string> appsByLocation = new Dictionary<string, string>();
 
-        [DllImport("msi.dll", CharSet = CharSet.Unicode)]
-        static extern int MsiGetProductInfo(string product, string property, StringBuilder valueBuf, ref Int32 len);
+        StringBuilder productCode = new StringBuilder(39);
+        int index = 0;
 
-        public static void GetAppsUsingAPI()
+        while (MsiEnumProducts(index, productCode) == 0)
         {
-            Dictionary<string, string> appsByVersion = new Dictionary<string, string>();
+            string code = productCode.ToString();
 
-            StringBuilder productCode = new StringBuilder(39);
-            int index = 0;
+            string productName = GetProductInfo(code, "ProductName");
+            string installLocation = GetProductInfo(code, "InstallDate");
 
-            while (MsiEnumProducts(index, productCode) == 0)
+            if (!string.IsNullOrEmpty(productName))
             {
-                string code = productCode.ToString();
-
-                string productName = GetProductInfo(code, "ProductName");
-                string version = GetProductInfo(code, "VersionString");
-
-                if (!string.IsNullOrEmpty(productName) && !string.IsNullOrEmpty(version))
-                {
-                    appsByVersion[version] = productName;
-                }
-
-                index++;
+               
+                    appsByLocation[installLocation] = productName;
+                
             }
 
-            Console.WriteLine($"Total Apps = {index}");
+            index++;
+        }
 
-            foreach (var pair in appsByVersion)
-            {
-                Console.WriteLine($"Version: {pair.Key}, Product: {pair.Value}");
-            }
-            Console.WriteLine($"Total Unique Apps = {appsByVersion.Count}");
+        foreach (var pair in appsByLocation)
+        {
+            Console.WriteLine($"Product: {pair.Key}, Location: {pair.Value}");
+        }
+        Console.WriteLine($"Total Unique Apps = {appsByLocation.Count}");
 
     }
 
     static string GetProductInfo(string productCode, string property)
-        {
-            StringBuilder valueBuf = new StringBuilder(512);
-            int len = 512;
+    {
+        StringBuilder valueBuf = new StringBuilder(512);
+        int len = 512;
 
-            if (MsiGetProductInfo(productCode, property, valueBuf, ref len) == 0)
-            {
-                return valueBuf.ToString();
-            }
-            else
-            {
-                return null;
-            }
+        if (MsiGetProductInfo(productCode, property, valueBuf, ref len) == 0)
+        {
+            return valueBuf.ToString();
+        }
+        else
+        {
+            return null;
         }
     }
-
+}
