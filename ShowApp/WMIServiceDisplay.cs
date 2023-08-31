@@ -24,6 +24,8 @@ public class WMIServiceDisplay
             Console.WriteLine($"Service Name : {m["Name"]}");
             Console.WriteLine($"Display Name : {m["DisplayName"]}");
             Console.WriteLine($"Status       : {m["State"]}");
+            Console.WriteLine($"Start Mode: {m["StartMode"]}");
+            Console.WriteLine($"Executable Path: {m["PathName"]}");
             Console.WriteLine("---------------------------------------");
         }
     }

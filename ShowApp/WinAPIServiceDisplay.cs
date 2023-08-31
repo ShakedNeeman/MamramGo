@@ -69,6 +69,9 @@ public class WinAPIServiceDisplay
                 Console.WriteLine($"Service Name: {Marshal.PtrToStringUni(serviceStatus.lpServiceName)}");
                 Console.WriteLine($"Display Name: {Marshal.PtrToStringUni(serviceStatus.lpDisplayName)}");
                 Console.WriteLine($"Current State: {serviceStatus.ServiceStatusProcess.dwCurrentState}");
+                Console.WriteLine($"Process ID: {serviceStatus.ServiceStatusProcess.dwProcessId}");
+                Console.WriteLine($"Service Type: {serviceStatus.ServiceStatusProcess.dwServiceType}");
+
                 Console.WriteLine("-----------------------------------------------------");
             }
         }
