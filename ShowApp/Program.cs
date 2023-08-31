@@ -58,54 +58,45 @@ class Program
     {
         try
         {
-            // Initialize a dictionary to store unique application details
-            Dictionary<string, string> appDetails = new Dictionary<string, string>();
-
-            // Create an object of WMI for querying Win32_Product class
+            Dictionary<string, Tuple<string, string, string>> appDetails = new Dictionary<string, Tuple<string, string, string>>();
             ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Product");
 
-            // Execute the WMI query and get the result
             ManagementObjectCollection queryCollection = searcher.Get();
 
-            // Initialize message and counter
-            Console.WriteLine("Result Get-WmiObject -Class Win32_Product | Format-List:");
-
-            // Iterate through the WMI query result
             foreach (ManagementObject m in queryCollection)
             {
-                // Extract the 'Name' and 'Version' from the current WMI object
                 string appName = m["Name"]?.ToString() ?? "";
                 string appVersion = m["Version"]?.ToString() ?? "";
+                string installLocation = m["InstallLocation"]?.ToString() ?? "Unknown";
+                string installState = m["InstallState"]?.ToString() ?? "";
 
-                // Check if both Name and Version are not empty, to consider it as an installed application
-                if (!string.IsNullOrEmpty(appName) && !string.IsNullOrEmpty(appVersion))
+                if (!string.IsNullOrEmpty(appName))
                 {
-                    // Check if this application name already exists in the dictionary
                     if (!appDetails.ContainsKey(appName))
                     {
-                        // Add the application details to the dictionary
-                        appDetails[appName] = appVersion;
+                        appDetails[appName] = new Tuple<string, string, string>(appVersion, installLocation, installState);
                     }
                 }
             }
 
-            // Display the details from the dictionary
             foreach (var detail in appDetails)
             {
                 Console.WriteLine("-----------------------------------");
                 Console.WriteLine($"Application Name: {detail.Key}");
-                Console.WriteLine($"Version: {detail.Value}");
+                Console.WriteLine($"Version: {detail.Value.Item1}");
+                Console.WriteLine($"Install Location: {detail.Value.Item2}");
+                Console.WriteLine($"Install State: {detail.Value.Item3}");
+
             }
 
-            // Output the total number of unique applications found
             Console.WriteLine($"Total Unique Apps = {appDetails.Count}");
         }
         catch (ManagementException e)
         {
-            // Display an error message if a WMI-specific exception occurs
-            Console.WriteLine("ERROR WMI: " + e.Message);
+            Console.WriteLine("An error occurred while querying for WMI data: " + e.Message);
         }
     }
+
 
     public static void GetAppByRegistry()
     {

@@ -8,52 +8,61 @@ class WinApi
     [DllImport("msi.dll", CharSet = CharSet.Unicode)]
     static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
 
-    [DllImport("msi.dll", CharSet = CharSet.Unicode)]
-    static extern int MsiGetProductInfo(string product, string property, StringBuilder valueBuf, ref Int32 len);
+    [DllImport("msi.dll", SetLastError = true)]
+    static extern Int32 MsiGetProductInfo(string product, string property, StringBuilder valueBuf, ref Int32 len);
+
+
 
     public static void GetAppsUsingAPI()
     {
-        Dictionary<string, string> appsByLocation = new Dictionary<string, string>();
+        Dictionary<string, string> installedApps = new Dictionary<string, string>();
 
+        int i = 0;
         StringBuilder productCode = new StringBuilder(39);
-        int index = 0;
+        Int32 productNameLen = 512;
+        Int32 installLocationLen = 512;
+        StringBuilder productName = new StringBuilder(productNameLen);
+        StringBuilder installLocation = new StringBuilder(installLocationLen);
 
-        while (MsiEnumProducts(index, productCode) == 0)
+        while (MsiEnumProducts(i, productCode) == 0)
         {
-            string code = productCode.ToString();
-
-            string productName = GetProductInfo(code, "ProductName");
-            string installLocation = GetProductInfo(code, "InstallDate");
-
-            if (!string.IsNullOrEmpty(productName))
+            if (MsiGetProductInfo(productCode.ToString(), "ProductName", productName, ref productNameLen) == 0 &&
+                MsiGetProductInfo(productCode.ToString(), "InstallLocation", installLocation, ref installLocationLen) == 0)
             {
-               
-                    appsByLocation[installLocation] = productName;
-                
+                installedApps[productName.ToString()] = installLocation.ToString();
             }
 
-            index++;
+            i++;
+            productNameLen = 512;
+            installLocationLen = 512;
+            productName.Clear();
+            installLocation.Clear();
         }
 
-        foreach (var pair in appsByLocation)
+        foreach (var kv in installedApps)
         {
-            Console.WriteLine($"Product: {pair.Key}, Location: {pair.Value}");
+            Console.WriteLine($"Installed app: {kv.Key}, Install Location: {kv.Value}");
         }
-        Console.WriteLine($"Total Unique Apps = {appsByLocation.Count}");
+        Console.WriteLine($"Total Unique Apps = {installedApps.Count}");
 
     }
 
+
+
     static string GetProductInfo(string productCode, string property)
     {
-        StringBuilder valueBuf = new StringBuilder(512);
-        int len = 512;
+        StringBuilder valueBuf = new StringBuilder(1024);
+        int len = 1024;
 
         if (MsiGetProductInfo(productCode, property, valueBuf, ref len) == 0)
         {
+            Console.WriteLine(MsiGetProductInfo(productCode, property, valueBuf, ref len));
+
             return valueBuf.ToString();
         }
         else
         {
+
             return null;
         }
     }
