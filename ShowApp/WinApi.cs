@@ -13,39 +13,53 @@ class WinApi
 
 
 
-    public static void GetAppsUsingAPI()
+    public static Dictionary<string, Tuple<string, string, string, string>> GetAppsUsingAPI()
     {
-        Dictionary<string, string> installedApps = new Dictionary<string, string>();
+        // Initialize a dictionary to hold application details by package code
+        Dictionary<string, Tuple<string, string, string, string>> appsByAppName = new Dictionary<string, Tuple<string, string, string, string>>();
 
-        int i = 0;
+        // StringBuilder to store the product code
         StringBuilder productCode = new StringBuilder(39);
-        Int32 productNameLen = 512;
-        Int32 installLocationLen = 512;
-        StringBuilder productName = new StringBuilder(productNameLen);
-        StringBuilder installLocation = new StringBuilder(installLocationLen);
 
-        while (MsiEnumProducts(i, productCode) == 0)
+        // Initialize index for enumeration
+        int index = 0;
+
+        // Enumerate all installed products
+        while (MsiEnumProducts(index, productCode) == 0)
         {
-            if (MsiGetProductInfo(productCode.ToString(), "ProductName", productName, ref productNameLen) == 0 &&
-                MsiGetProductInfo(productCode.ToString(), "InstallLocation", installLocation, ref installLocationLen) == 0)
+            // Convert the product code to a string
+            string code = productCode.ToString();
+
+            // Fetch product name for the given product code
+            string productName = GetProductInfo(code, "ProductName");
+
+            // Fetch package code for the given product code
+            string packageCode = GetProductInfo(code, "PackageCode");
+
+            // Fetch install date for the given product code
+            string installDate = GetProductInfo(code, "InstallDate");
+
+            // Fetch installed size for the given product code
+            string installedSize = GetProductInfo(code, "InstalledSize");
+
+            // Check if the product name and package code are not null or empty
+            if (!string.IsNullOrEmpty(productName) && !string.IsNullOrEmpty(packageCode))
             {
-                installedApps[productName.ToString()] = installLocation.ToString();
+                // Create a Tuple for additional info like install date and installed size
+                var additionalInfo = new Tuple<string, string, string, string>(code, packageCode, installDate ?? "N/A", installedSize ?? "N/A");
+
+                // Add the application info to the dictionary
+                appsByAppName[productName] = additionalInfo;
             }
 
-            i++;
-            productNameLen = 512;
-            installLocationLen = 512;
-            productName.Clear();
-            installLocation.Clear();
+            // Increment the index for the next iteration
+            index++;
         }
 
-        foreach (var kv in installedApps)
-        {
-            Console.WriteLine($"Installed app: {kv.Key}, Install Location: {kv.Value}");
-        }
-        Console.WriteLine($"Total Unique Apps = {installedApps.Count}");
-
+        // Return the dictionary containing all the apps and their details
+        return appsByAppName;
     }
+
 
 
 
@@ -56,7 +70,6 @@ class WinApi
 
         if (MsiGetProductInfo(productCode, property, valueBuf, ref len) == 0)
         {
-            Console.WriteLine(MsiGetProductInfo(productCode, property, valueBuf, ref len));
 
             return valueBuf.ToString();
         }
@@ -65,5 +78,7 @@ class WinApi
 
             return null;
         }
+
+        
     }
 }

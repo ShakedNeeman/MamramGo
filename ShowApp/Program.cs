@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32;
-using System.Diagnostics;
 using System.Management;
-using System.Collections.Generic; // Required for Dictionary class
+using OfficeOpenXml;
+
 
 
 class Program
@@ -9,282 +9,386 @@ class Program
         static void Main(string[] args)
         {
             bool continueMenu = true;
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-            do
-            {
+
+        do
+        {
                 Console.WriteLine("Enter a number to select a display operation method");
                 Console.WriteLine("1-Show All The App By WMI");
                 Console.WriteLine("2-Show All The App By Registry");
-                Console.WriteLine("3-Show All The App By PowerShell");
-                Console.WriteLine("4-Show All The App By CMD");
-                Console.WriteLine("5-Show All The App By API");
+                Console.WriteLine("3-Show All The App By API");
+                Console.WriteLine("4-Export To CSV ");
 
 
-            Console.WriteLine("6-EXIT");
 
-                int dayNumber = int.Parse(Console.ReadLine());
+            Console.WriteLine("5-EXIT");
+
+                int Number = int.Parse(Console.ReadLine());
 
 
-                switch (dayNumber)
+                switch (Number)
                 {
                     case 1:
-                        GetAppByWMI();
-                        break;
+                        GetAppByWMI(); // Assuming you have GetAppByWMI() defined as before                  
+                    break;
                     case 2:
-                        GetAppByRegistry();
-                        break;
+                        GetAppByRegistry();              
+                    break;
                     case 3:
-                        GetAppsByPowerShell();
-                        break;
-                    case 4:
-                        GetAppsUsingCmd();
-                        break;
-                    case 5:
                         WinApi.GetAppsUsingAPI();
                     break;
-                case 6:
+
+                case 4:
+
+                    // Get data from each function
+                    Dictionary<string, Tuple<string, string, string, string>> wmiAppDetails = GetAppByWMI();
+                    Dictionary<string, (string Version, string InstallLocation)> registryAppDetails = GetAppByRegistry();
+                    Dictionary<string, Tuple<string, string, string, string>> appsByAppName = WinApi.GetAppsUsingAPI();
+                    Dictionary<string, string> uninstalledApps = UninstallApp();
+
+                    // Create a new Excel package
+                    using (ExcelPackage excel = new ExcelPackage())
+                    {
+                        // Add a worksheet for WMI app details
+                        ExportToExcelSheet(wmiAppDetails, "WMI_AppDetails", excel, new string[] { "App Name", "Version", "Install Location", "Install State", "Install Date" });
+
+                        // Add a worksheet for Registry app details
+                        ExportToExcelSheet(registryAppDetails, "Registry_AppDetails", excel, new string[] { "App Name", "Version", "Install Location" });
+
+                        // Add a worksheet for Uninstalled apps
+                        ExportToExcelSheet(uninstalledApps, "Uninstalled_Apps", excel, new string[] { "App Name", "Status" });
+
+                        ExportToExcelSheet(appsByAppName, "API_AppDetails", excel, new string[] { "App Name", "packageCode", "Install Location", "installDate", "installedSize" });
+
+                        // Save to file
+                        FileInfo excelFile = new FileInfo("AllAppDetails.xlsx");
+                        try
+                        {
+                            excel.SaveAs(excelFile);
+                            Console.WriteLine($"Excel file has been saved at: {excelFile.FullName}");
+                        }
+                        catch (IOException ioEx)
+                        {
+                            Console.WriteLine($"IO Error: {ioEx.Message}");
+                        }
+                        catch (UnauthorizedAccessException unAuthEx)
+                        {
+                            Console.WriteLine($"Access Error: You don't have permission to write to this location. {unAuthEx.Message}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"An unknown error occurred: {ex.Message}");
+                        }
+                        FileInfo existingFile = new FileInfo("AllAppDetails.xlsx");
+                        Dictionary<string, int> appCount = new Dictionary<string, int>();
+
+                        using (ExcelPackage package = new ExcelPackage(existingFile))
+                        {
+                            foreach (var worksheet in package.Workbook.Worksheets)
+                            {
+                                int rowCount = worksheet.Dimension.Rows;
+
+                                for (int row = 2; row <= rowCount; row++) // Assuming the first row is header
+                                {
+                                    string appName = worksheet.Cells[row, 1].Text;
+
+                                    if (!string.IsNullOrEmpty(appName))
+                                    {
+                                        if (appCount.ContainsKey(appName))
+                                        {
+                                            appCount[appName]++;
+                                        }
+                                        else
+                                        {
+                                            appCount[appName] = 1;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Create a new worksheet for the summary
+                            var summaryWorksheet = package.Workbook.Worksheets.Add("Summary");
+                            summaryWorksheet.Cells[1, 1].Value = "App Name";
+                            summaryWorksheet.Cells[1, 2].Value = "Count";
+
+                            int summaryRow = 2;
+                            foreach (var kvp in appCount)
+                            {
+                                summaryWorksheet.Cells[summaryRow, 1].Value = kvp.Key;
+                                summaryWorksheet.Cells[summaryRow, 2].Value = kvp.Value;
+                                summaryRow++;
+                            }
+
+                            package.Save();
+                        }
+
+                        Console.WriteLine("Summary sheet has been added to the Excel file.");
+
+                        FileInfo existingFileForRegistry = new FileInfo("AllAppDetails.xlsx");
+                        Dictionary<string, int> appCountFromRegistry = new Dictionary<string, int>();
+
+                        using (ExcelPackage package = new ExcelPackage(existingFileForRegistry))
+                        {
+                            var registryWorksheet = package.Workbook.Worksheets["Registry_AppDetails"];
+                            int rowCount = registryWorksheet.Dimension.Rows;
+
+                            // Count apps that come from Registry
+                            for (int row = 2; row <= rowCount; row++) // Assuming the first row is header
+                            {
+                                string appName = registryWorksheet.Cells[row, 1].Text;
+                                if (!string.IsNullOrEmpty(appName))
+                                {
+                                    appCountFromRegistry[appName] = 0; // Initialize
+                                }
+                            }
+
+                            // Count these apps across all worksheets
+                            foreach (var worksheet in package.Workbook.Worksheets)
+                            {
+                                rowCount = worksheet.Dimension.Rows;
+
+                                for (int row = 2; row <= rowCount; row++) // Assuming the first row is header
+                                {
+                                    string appName = worksheet.Cells[row, 1].Text;
+                                    if (appCountFromRegistry.ContainsKey(appName))
+                                    {
+                                        appCountFromRegistry[appName]++;
+                                    }
+                                }
+                            }
+
+                            // Create a new worksheet for the summary
+                            var summaryWorksheet = package.Workbook.Worksheets.Add("Registry_Summary");
+                            summaryWorksheet.Cells[1, 1].Value = "App Name";
+                            summaryWorksheet.Cells[1, 2].Value = "Count";
+
+                            int summaryRow = 2;
+                            foreach (var kvp in appCountFromRegistry)
+                            {
+                                summaryWorksheet.Cells[summaryRow, 1].Value = kvp.Key;
+                                summaryWorksheet.Cells[summaryRow, 2].Value = kvp.Value;
+                                summaryRow++;
+                            }
+
+                            package.Save();
+                        }
+
+                        Console.WriteLine("Registry summary sheet has been added to the Excel file.");
+                    
+
+
+            }
+                    break;
+
+                case 5:
                         Console.WriteLine("Exiting the program");
                         continueMenu = false;
                         break;
                     default:
                         Console.WriteLine("Invalid Choice");
+                    
                         break;
                 }
             } while (continueMenu);
-        }
+    }
 
 
-    public static void GetAppByWMI()
+    public static Dictionary<string, Tuple<string, string, string, string>> GetAppByWMI()
     {
+        // Initialize a dictionary to hold application details
+        Dictionary<string, Tuple<string, string, string, string>> appDetails = new Dictionary<string, Tuple<string, string, string, string>>();
+
         try
         {
-            Dictionary<string, Tuple<string, string, string>> appDetails = new Dictionary<string, Tuple<string, string, string>>();
+            // Query WMI for Win32_Product entries
             ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Product");
-
             ManagementObjectCollection queryCollection = searcher.Get();
 
+            // Loop through all entries to get app details
             foreach (ManagementObject m in queryCollection)
             {
+                // Retrieve app details from WMI properties
                 string appName = m["Name"]?.ToString() ?? "";
                 string appVersion = m["Version"]?.ToString() ?? "";
                 string installLocation = m["InstallLocation"]?.ToString() ?? "Unknown";
                 string installState = m["InstallState"]?.ToString() ?? "";
+                string installDate = m["InstallDate"]?.ToString() ?? "";
 
+                // Add the details to the dictionary if the app name is not empty
                 if (!string.IsNullOrEmpty(appName))
                 {
-                    if (!appDetails.ContainsKey(appName))
-                    {
-                        appDetails[appName] = new Tuple<string, string, string>(appVersion, installLocation, installState);
-                    }
+                    appDetails[appName] = new Tuple<string, string, string, string>(appVersion, installLocation, installState, installDate);
                 }
             }
 
-            foreach (var detail in appDetails)
-            {
-                Console.WriteLine("-----------------------------------");
-                Console.WriteLine($"Application Name: {detail.Key}");
-                Console.WriteLine($"Version: {detail.Value.Item1}");
-                Console.WriteLine($"Install Location: {detail.Value.Item2}");
-                Console.WriteLine($"Install State: {detail.Value.Item3}");
+            // Print app details to the console (for debug or logging)
+            int index = 1;
+            //foreach (var detail in appDetails)
+            //{
+            //    Console.WriteLine("-----------------------------------");
+            //    Console.WriteLine($"{index}");
+            //    Console.WriteLine($"Application Name: {detail.Key}");
+            //    Console.WriteLine($"Version: {detail.Value.Item1}");
+            //    Console.WriteLine($"Install Location: {detail.Value.Item2}");
+            //    Console.WriteLine($"Install State: {detail.Value.Item3}");
+            //    Console.WriteLine($"Install Date: {detail.Value.Item4}");
+            //    index++;
+            //}
 
-            }
-
-            Console.WriteLine($"Total Unique Apps = {appDetails.Count}");
+            //// Print the total number of unique apps found
+            //Console.WriteLine($"Total Unique Apps = {appDetails.Count}");
         }
         catch (ManagementException e)
         {
+            // Log any exceptions that occur during the WMI query
             Console.WriteLine("An error occurred while querying for WMI data: " + e.Message);
         }
+
+        // Return the dictionary containing app details
+        return appDetails;
     }
 
-
-    public static void GetAppByRegistry()
+    // Fetch installed apps from Registry and return them as a dictionary
+    public static Dictionary<string, (string Version, string InstallLocation)> GetAppByRegistry()
     {
+        // Initialize a dictionary to hold application details
+        Dictionary<string, (string Version, string InstallLocation)> appDetails = new Dictionary<string, (string, string)>();
+
         try
         {
-            // Initialize a dictionary to store application details
-            Dictionary<string, (string Version, string InstallLocation)> appDetails = new Dictionary<string, (string, string)>();
-
-            // Open the Registry key for installed applications
+            // Open the Registry key where installed apps are listed
             RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
 
-            // Output header message
-            Console.WriteLine("Installed Applications Information:");
-
-            // Loop through each subkey (application) under the "Uninstall" key
+            // Loop through all subkeys to get app details
             foreach (string subKeyName in key.GetSubKeyNames())
             {
-                // Open the subkey (application key)
+                // Open each subkey to read its values
                 RegistryKey subKey = key.OpenSubKey(subKeyName);
 
-                // Check for a null key just to be safe
+                // Check for null and proceed
                 if (subKey != null)
                 {
-                    // Retrieve the application's display name, version, and install location from the subkey
+                    // Read app details from Registry values
                     object appName = subKey.GetValue("DisplayName");
                     object appVersion = subKey.GetValue("DisplayVersion");
                     object installLocation = subKey.GetValue("InstallLocation");
 
-                    // Check if the application name is not null (it's one of the main properties)
+                    // Add the details to the dictionary if app name exists
                     if (appName != null)
                     {
-                        // Check if this application name already exists in the dictionary
-                        if (!appDetails.ContainsKey(appName.ToString()))
+                        string appVersionString = appVersion?.ToString();
+                        string installLocationString = installLocation?.ToString();
+
+                        if (appVersionString != null || installLocationString != null)
                         {
-                            // Add the application to the dictionary
-                            appDetails[appName.ToString()] = (appVersion?.ToString() ?? "N/A", installLocation?.ToString() ?? "N/A");
+                            appDetails[appName.ToString()] = (appVersionString, installLocationString);
                         }
                     }
                 }
             }
-
-            // Display the details from the dictionary
-            foreach (var detail in appDetails)
-            {
-                Console.WriteLine("-----------------------------------");
-                Console.WriteLine($"Application Name: {detail.Key}");
-                Console.WriteLine($"Version: {detail.Value.Version}");
-                Console.WriteLine($"Install Location: {detail.Value.InstallLocation}");
-            }
-
-            // Output the total number of unique applications found
-            Console.WriteLine($"Total Unique Apps = {appDetails.Count}");
         }
         catch (Exception e)
         {
-            // Output any exceptions that were thrown
+            // Log any exceptions that occur
             Console.WriteLine("An error occurred: " + e.Message);
         }
+
+        // Return the dictionary containing app details
+        return appDetails;
     }
 
-    public static void GetAppsByPowerShell()
+
+
+    public static Dictionary<string, string> UninstallApp()
+    {
+        // Initialize a dictionary to hold uninstalled application details
+        Dictionary<string, string> uninstalledApps = new Dictionary<string, string>();
+
+        // Open the Registry key where installed apps are listed
+        RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
+
+        // Loop through all subkeys to find uninstalled apps
+        foreach (string subKeyName in key.GetSubKeyNames())
         {
+            // Open each subkey to read its values
+            RegistryKey subKey = key.OpenSubKey(subKeyName);
 
-            // Create a ProcessStartInfo object to configure the PowerShell process
-            ProcessStartInfo psi = new ProcessStartInfo
+            // Check for null and proceed
+            if (subKey != null)
             {
-                FileName = "powershell", // Set the executable to PowerShell
-                RedirectStandardOutput = true, // Redirect the standard output
-                RedirectStandardError = true, // Redirect the standard error
-                RedirectStandardInput = true, // Redirect the standard input
-                UseShellExecute = false, // Don't use the system shell to execute the process
-                CreateNoWindow = true // Don't create a window for the process
-            };
+                // Read app details from Registry values
+                object appName = subKey.GetValue("DisplayName");
+                object uninstallInfo = subKey.GetValue("UninstallString");
 
-            // Create a Process object and assign the ProcessStartInfo
-            Process process = new Process
+                // Add the details to the dictionary if app name exists but uninstall info doesn't
+                if (appName != null && uninstallInfo == null)
+                {
+                    uninstalledApps[appName.ToString()] = "Uninstalled";
+                }
+            }
+        }
+
+        // Return the dictionary containing uninstalled app details
+        return uninstalledApps;
+    }
+
+    static void ExportToExcelSheet<T>(Dictionary<string, T> data, string sheetName, ExcelPackage excel, string[] headers)
+    {
+        var worksheet = excel.Workbook.Worksheets.Add(sheetName);
+
+        // Add headers to the worksheet
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cells[1, i + 1].Value = headers[i];
+        }
+
+        // Initialize the row counter
+        int row = 2;
+
+        // Loop through each entry in the dictionary
+        foreach (var entry in data)
+        {
+            // Add the key to the first column of the current row
+            worksheet.Cells[row, 1].Value = entry.Key;
+
+            // Check the type of the value
+            if (entry.Value is Tuple<string, string, string, string> tupleValue)
             {
-                StartInfo = psi
-            };
-
-            // Start the PowerShell process
-            process.Start();
-
-            // Execute PowerShell command to get application information
-            string command = "Get-WmiObject -Class Win32_Product | Select-Object Name, Version, InstallLocation";
-
-            // Write the command to the standard input of the process
-            process.StandardInput.WriteLine(command);
-
-            // Close the standard input to indicate no more input will be written
-            process.StandardInput.Close();
-
-            // Read the output and error streams
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-
-            // Wait for the process to exit
-            process.WaitForExit();
-
-            // Check if there's any error and display it
-            if (!string.IsNullOrWhiteSpace(error))
+                // Manually unpack the tuple and add the items to the worksheet
+                worksheet.Cells[row, 2].Value = tupleValue.Item1;
+                worksheet.Cells[row, 3].Value = tupleValue.Item2;
+                worksheet.Cells[row, 4].Value = tupleValue.Item3;
+                worksheet.Cells[row, 5].Value = tupleValue.Item4;
+            }
+            else if (entry.Value is ValueTuple<string, string> valueTuple)
             {
-                Console.WriteLine("PowerShell Error: " + error);
+                // Manually unpack the value tuple and add the items to the worksheet
+                worksheet.Cells[row, 2].Value = valueTuple.Item1;
+                worksheet.Cells[row, 3].Value = valueTuple.Item2;
             }
             else
             {
-                // Display the installed applications information
-                Console.WriteLine("Installed Applications Information:");
-                Console.WriteLine(output);
-            // Split the output by new lines
-            string[] lines = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                // Convert the value to a string and add it to the second column of the current row
+                worksheet.Cells[row, 2].Value = entry.Value.ToString();
+            }
 
-            // Count the number of lines, each line represents one application
-            int numberOfApps = lines.Length;
-
-            Console.WriteLine($"Total Apps = {numberOfApps}");
-        }
-        }
-    static public void GetAppsUsingCmd()
-    {
-        try
-        {
-            // Create a new process object
-            Process process = new Process();
-
-            // Define process start information
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                // Hide the cmd window
-                WindowStyle = ProcessWindowStyle.Hidden,
-
-                // Set process executable to cmd.exe
-                FileName = "cmd.exe",
-
-                // Redirect standard output and input to manipulate the stream
-                RedirectStandardOutput = true,
-                RedirectStandardInput = true,
-
-                // Disable shell execute to allow redirection
-                UseShellExecute = false,
-
-                // Do not create a new cmd window
-                CreateNoWindow = true
-            };
-
-            // Assign the configured start information to the process
-            process.StartInfo = startInfo;
-
-            // Start the process
-            process.Start();
-
-            // Define the WMIC command to list installed applications
-            string cmdCommand = "wmic product get name, version, PackageCache";
-
-            // Write the WMIC command to the process stdin stream
-            process.StandardInput.WriteLine(cmdCommand);
-
-            // Write 'exit' to process stdin stream to close it
-            process.StandardInput.WriteLine("exit");
-
-            // Read the entire standard output stream of the process
-            string output = process.StandardOutput.ReadToEnd();
-
-            // Wait for the process to exit
-            process.WaitForExit();
-
-            // Output the results
-            Console.WriteLine("WMIC Output:");
-            Console.WriteLine(output);
-        }
-        catch (Exception ex)
-        {
-           
-            // General exception handler
-            Console.WriteLine("An error occurred in GetAppsUsingCmd: " + ex.Message);
+            // Increment the row counter
+            row++;
         }
     }
+
 }
 
 
 
-            
-
-    
 
 
- 
-    
+
+
+
+
+
 
 
 
