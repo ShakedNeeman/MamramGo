@@ -1,11 +1,9 @@
 ﻿using Microsoft.Win32;
 using System.Management;
 using OfficeOpenXml;
-
-
-
+using System.Diagnostics;
 class Program
-    {
+{
         static void Main(string[] args)
         {
             bool continueMenu = true;
@@ -30,7 +28,7 @@ class Program
                 switch (Number)
                 {
                     case 1:
-                        GetAppByWMI(); // Assuming you have GetAppByWMI() defined as before                  
+                    GetAppByWMI(); // Assuming you have GetAppByWMI() defined as before                  
                     break;
                     case 2:
                         GetAppByRegistry();              
@@ -46,6 +44,8 @@ class Program
                     Dictionary<string, (string Version, string InstallLocation)> registryAppDetails = GetAppByRegistry();
                     Dictionary<string, Tuple<string, string, string, string>> appsByAppName = WinApi.GetAppsUsingAPI();
                     Dictionary<string, string> uninstalledApps = UninstallApp();
+                    Dictionary<string, Tuple<EventLogEntryType, DateTime, string, int>> myLog = GetLog1034();
+
 
                     // Create a new Excel package
                     using (ExcelPackage excel = new ExcelPackage())
@@ -56,10 +56,14 @@ class Program
                         // Add a worksheet for Registry app details
                         ExportToExcelSheet(registryAppDetails, "Registry_AppDetails", excel, new string[] { "App Name", "Version", "Install Location" });
 
+                        ExportToExcelSheet(appsByAppName, "API_AppDetails", excel, new string[] { "App Name", "packageCode", "Install Location", "installDate", "installedSize" });
+
                         // Add a worksheet for Uninstalled apps
                         ExportToExcelSheet(uninstalledApps, "Uninstalled_Apps", excel, new string[] { "App Name", "Status" });
 
-                        ExportToExcelSheet(appsByAppName, "API_AppDetails", excel, new string[] { "App Name", "packageCode", "Install Location", "installDate", "installedSize" });
+                        // Add a worksheet for Event Viewer apps
+
+                        ExportToExcelSheet(myLog, "Event Viewer Log Application", excel, new string[] { "App Name", "Entry Type" , "Time Generated", "Source","Event ID" });
 
                         // Save to file
                         FileInfo excelFile = new FileInfo("AllAppDetails.xlsx");
@@ -361,6 +365,14 @@ class Program
                 worksheet.Cells[row, 4].Value = tupleValue.Item3;
                 worksheet.Cells[row, 5].Value = tupleValue.Item4;
             }
+            else if (entry.Value is Tuple<EventLogEntryType, DateTime, string, int> TValue)
+            {
+                // Manually unpack the tuple and add the items to the worksheet
+                worksheet.Cells[row, 2].Value = TValue.Item1;
+                worksheet.Cells[row, 3].Value = TValue.Item2;
+                worksheet.Cells[row, 4].Value = TValue.Item3;
+                worksheet.Cells[row, 5].Value = TValue.Item4;
+            }
             else if (entry.Value is ValueTuple<string, string> valueTuple)
             {
                 // Manually unpack the value tuple and add the items to the worksheet
@@ -376,6 +388,33 @@ class Program
             // Increment the row counter
             row++;
         }
+    }
+
+    public static Dictionary<string, Tuple<EventLogEntryType, DateTime, string,int>> GetLog1034()
+    {
+        // Initialize the dictionary to store the results
+        Dictionary<string, Tuple<EventLogEntryType, DateTime, string,int>> resultDict = new Dictionary<string, Tuple<EventLogEntryType, DateTime, string,int>>();
+
+        // Define the log we'll be reading from
+        string logType = "Application"; // Adjust as needed
+
+        // Read the event log
+        EventLog eventLog = new EventLog(logType);
+
+        // Go through each entry in the event log
+        foreach (EventLogEntry logEntry in eventLog.Entries)
+        {
+            // Filter for Event ID 1034 (Use InstanceId instead of deprecated EventID)
+            if (logEntry.EventID == 1034)
+            {
+                // Add details to the dictionary
+                resultDict[logEntry.Message] = Tuple.Create(logEntry.EntryType, logEntry.TimeGenerated, logEntry.Source, logEntry.EventID);
+            }
+        }
+
+     
+
+        return resultDict;
     }
 
 }
