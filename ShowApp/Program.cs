@@ -2,68 +2,78 @@
 using System.Management;
 using OfficeOpenXml;
 using System.Diagnostics;
+using ShowApp;
+
 class Program
 {
-        static void Main(string[] args)
-        {
-            bool continueMenu = true;
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+    static void Main(string[] args)
+    {
+        bool continueMenu = true;
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 
         do
         {
-                Console.WriteLine("Enter a number to select a display operation method");
-                Console.WriteLine("1-Show All The App By WMI");
-                Console.WriteLine("2-Show All The App By Registry");
-                Console.WriteLine("3-Show All The App By API");
-                Console.WriteLine("4-Export To CSV ");
+            Console.WriteLine("Enter a number to select a display operation method");
+            Console.WriteLine("1-Show All The App By WMI");
+            Console.WriteLine("2-Show All The App By Registry");
+            Console.WriteLine("3-Show All The App By API");
+            Console.WriteLine("4-Export To CSV ");
 
 
 
             Console.WriteLine("5-EXIT");
 
-                int Number = int.Parse(Console.ReadLine());
+            int Number = int.Parse(Console.ReadLine());
 
 
-                switch (Number)
-                {
-                    case 1:
-                    GetAppByWMI(); // Assuming you have GetAppByWMI() defined as before                  
+            switch (Number)
+            {
+                case 1:
+                    WMI.GetAppByWMI(); // Assuming you have GetAppByWMI() defined as before                  
                     break;
-                    case 2:
-                        GetAppByRegistry();              
+                case 2:
+                    MyRegistry.GetAppByRegistry();
                     break;
-                    case 3:
-                        WinApi.GetAppsUsingAPI();
+                case 3:
+                    WinApi.GetAppsUsingAPI();
                     break;
 
                 case 4:
 
                     // Get data from each function
-                    Dictionary<string, Tuple<string, string, string, string>> wmiAppDetails = GetAppByWMI();
-                    Dictionary<string, (string Version, string InstallLocation)> registryAppDetails = GetAppByRegistry();
+                    Dictionary<string, Tuple<string, string, string, string>> wmiAppDetails = WMI.GetAppByWMI();
+                    Dictionary<string, (string Version, string InstallLocation)> registryAppDetails = MyRegistry.GetAppByRegistry();
                     Dictionary<string, Tuple<string, string, string, string>> appsByAppName = WinApi.GetAppsUsingAPI();
-                    Dictionary<string, string> uninstalledApps = UninstallApp();
-                    Dictionary<string, Tuple<EventLogEntryType, DateTime, string, int>> myLog = GetLog1034();
+                    Dictionary<string, string> uninstalledApps = MyRegistry.UninstallApp();
+                    Dictionary<string, Tuple<EventLogEntryType, DateTime, string, int>> myLog = Helper.GetLog1034();
 
+                    Dictionary<string, Tuple<string, DateTime, long>> appDetails = new Dictionary<string, Tuple<string, DateTime, long>>();
+                    Helper.CollectAppDetails("C:\\Program Files", appDetails);
+                    Helper.CollectAppDetails("C:\\Program Files (x86)", appDetails);
+                    Helper.CollectAppDetails($"C:\\Users\\{Environment.UserName}\\AppData\\", appDetails);
+                    Helper.CollectAppDetails("C:\\Windows\\System32", appDetails);
+                    Helper.CollectAppDetails("C:\\ProgramData", appDetails);
 
                     // Create a new Excel package
                     using (ExcelPackage excel = new ExcelPackage())
                     {
                         // Add a worksheet for WMI app details
-                        ExportToExcelSheet(wmiAppDetails, "WMI_AppDetails", excel, new string[] { "App Name", "Version", "Install Location", "Install State", "Install Date" });
+                        MyExcel.ExportToExcelSheet(wmiAppDetails, "WMI_AppDetails", excel, new string[] { "App Name", "Version", "Install Location", "Install State", "Install Date" });
 
                         // Add a worksheet for Registry app details
-                        ExportToExcelSheet(registryAppDetails, "Registry_AppDetails", excel, new string[] { "App Name", "Version", "Install Location" });
+                        MyExcel.ExportToExcelSheet(registryAppDetails, "Registry_AppDetails", excel, new string[] { "App Name", "Version", "Install Location" });
 
-                        ExportToExcelSheet(appsByAppName, "API_AppDetails", excel, new string[] { "App Name", "packageCode", "Install Location", "installDate", "installedSize" });
+                        MyExcel.ExportToExcelSheet(appsByAppName, "API_AppDetails", excel, new string[] { "App Name", "packageCode", "Install Location", "installDate", "installedSize" });
 
                         // Add a worksheet for Uninstalled apps
-                        ExportToExcelSheet(uninstalledApps, "Uninstalled_Apps", excel, new string[] { "App Name", "Status" });
+                        MyExcel.ExportToExcelSheet(uninstalledApps, "Uninstalled_Apps", excel, new string[] { "App Name", "Status" });
 
                         // Add a worksheet for Event Viewer apps
+                        MyExcel.ExportToExcelSheet(myLog, "Event Viewer Log Application", excel, new string[] { "App Name", "Entry Type", "Time Generated", "Source", "Event ID" });
 
-                        ExportToExcelSheet(myLog, "Event Viewer Log Application", excel, new string[] { "App Name", "Entry Type" , "Time Generated", "Source","Event ID" });
+                        MyExcel.ExportToExcelSheet(appDetails, "App Folder", excel, new string[] { "App Name", "dir", "Time", "size" });
+
 
                         // Save to file
                         FileInfo excelFile = new FileInfo("AllAppDetails.xlsx");
@@ -179,251 +189,31 @@ class Program
                         }
 
                         Console.WriteLine("Registry summary sheet has been added to the Excel file.");
-                    
 
+                    }
 
-            }
                     break;
 
                 case 5:
-                        Console.WriteLine("Exiting the program");
-                        continueMenu = false;
-                        break;
-                    default:
-                        Console.WriteLine("Invalid Choice");
-                    
-                        break;
-                }
-            } while (continueMenu);
-    }
+                    Console.WriteLine("Exiting the program");
+                    continueMenu = false;
+                    break;
 
-
-    public static Dictionary<string, Tuple<string, string, string, string>> GetAppByWMI()
-    {
-        // Initialize a dictionary to hold application details
-        Dictionary<string, Tuple<string, string, string, string>> appDetails = new Dictionary<string, Tuple<string, string, string, string>>();
-
-        try
-        {
-            // Query WMI for Win32_Product entries
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Product");
-            ManagementObjectCollection queryCollection = searcher.Get();
-
-            // Loop through all entries to get app details
-            foreach (ManagementObject m in queryCollection)
-            {
-                // Retrieve app details from WMI properties
-                string appName = m["Name"]?.ToString() ?? "";
-                string appVersion = m["Version"]?.ToString() ?? "";
-                string installLocation = m["InstallLocation"]?.ToString() ?? "Unknown";
-                string installState = m["InstallState"]?.ToString() ?? "";
-                string installDate = m["InstallDate"]?.ToString() ?? "";
-
-                // Add the details to the dictionary if the app name is not empty
-                if (!string.IsNullOrEmpty(appName))
-                {
-                    appDetails[appName] = new Tuple<string, string, string, string>(appVersion, installLocation, installState, installDate);
-                }
+                default:
+                    Console.WriteLine("Invalid Choice");
+                    break;
             }
-
-            // Print app details to the console (for debug or logging)
-            int index = 1;
-            //foreach (var detail in appDetails)
-            //{
-            //    Console.WriteLine("-----------------------------------");
-            //    Console.WriteLine($"{index}");
-            //    Console.WriteLine($"Application Name: {detail.Key}");
-            //    Console.WriteLine($"Version: {detail.Value.Item1}");
-            //    Console.WriteLine($"Install Location: {detail.Value.Item2}");
-            //    Console.WriteLine($"Install State: {detail.Value.Item3}");
-            //    Console.WriteLine($"Install Date: {detail.Value.Item4}");
-            //    index++;
-            //}
-
-            //// Print the total number of unique apps found
-            //Console.WriteLine($"Total Unique Apps = {appDetails.Count}");
-        }
-        catch (ManagementException e)
-        {
-            // Log any exceptions that occur during the WMI query
-            Console.WriteLine("An error occurred while querying for WMI data: " + e.Message);
-        }
-
-        // Return the dictionary containing app details
-        return appDetails;
-    }
-
-    // Fetch installed apps from Registry and return them as a dictionary
-    public static Dictionary<string, (string Version, string InstallLocation)> GetAppByRegistry()
-    {
-        // Initialize a dictionary to hold application details
-        Dictionary<string, (string Version, string InstallLocation)> appDetails = new Dictionary<string, (string, string)>();
-
-        try
-        {
-            // Open the Registry key where installed apps are listed
-            RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
-
-            // Loop through all subkeys to get app details
-            foreach (string subKeyName in key.GetSubKeyNames())
-            {
-                // Open each subkey to read its values
-                RegistryKey subKey = key.OpenSubKey(subKeyName);
-
-                // Check for null and proceed
-                if (subKey != null)
-                {
-                    // Read app details from Registry values
-                    object appName = subKey.GetValue("DisplayName");
-                    object appVersion = subKey.GetValue("DisplayVersion");
-                    object installLocation = subKey.GetValue("InstallLocation");
-
-                    // Add the details to the dictionary if app name exists
-                    if (appName != null)
-                    {
-                        string appVersionString = appVersion?.ToString();
-                        string installLocationString = installLocation?.ToString();
-
-                        if (appVersionString != null || installLocationString != null)
-                        {
-                            appDetails[appName.ToString()] = (appVersionString, installLocationString);
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            // Log any exceptions that occur
-            Console.WriteLine("An error occurred: " + e.Message);
-        }
-
-        // Return the dictionary containing app details
-        return appDetails;
-    }
+        } while (continueMenu);
 
 
-
-    public static Dictionary<string, string> UninstallApp()
-    {
-        // Initialize a dictionary to hold uninstalled application details
-        Dictionary<string, string> uninstalledApps = new Dictionary<string, string>();
-
-        // Open the Registry key where installed apps are listed
-        RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
-
-        // Loop through all subkeys to find uninstalled apps
-        foreach (string subKeyName in key.GetSubKeyNames())
-        {
-            // Open each subkey to read its values
-            RegistryKey subKey = key.OpenSubKey(subKeyName);
-
-            // Check for null and proceed
-            if (subKey != null)
-            {
-                // Read app details from Registry values
-                object appName = subKey.GetValue("DisplayName");
-                object uninstallInfo = subKey.GetValue("UninstallString");
-
-                // Add the details to the dictionary if app name exists but uninstall info doesn't
-                if (appName != null && uninstallInfo == null)
-                {
-                    uninstalledApps[appName.ToString()] = "Uninstalled";
-                }
-            }
-        }
-
-        // Return the dictionary containing uninstalled app details
-        return uninstalledApps;
-    }
-
-    static void ExportToExcelSheet<T>(Dictionary<string, T> data, string sheetName, ExcelPackage excel, string[] headers)
-    {
-        var worksheet = excel.Workbook.Worksheets.Add(sheetName);
-
-        // Add headers to the worksheet
-        for (int i = 0; i < headers.Length; i++)
-        {
-            worksheet.Cells[1, i + 1].Value = headers[i];
-        }
-
-        // Initialize the row counter
-        int row = 2;
-
-        // Loop through each entry in the dictionary
-        foreach (var entry in data)
-        {
-            // Add the key to the first column of the current row
-            worksheet.Cells[row, 1].Value = entry.Key;
-
-            // Check the type of the value
-            if (entry.Value is Tuple<string, string, string, string> tupleValue)
-            {
-                // Manually unpack the tuple and add the items to the worksheet
-                worksheet.Cells[row, 2].Value = tupleValue.Item1;
-                worksheet.Cells[row, 3].Value = tupleValue.Item2;
-                worksheet.Cells[row, 4].Value = tupleValue.Item3;
-                worksheet.Cells[row, 5].Value = tupleValue.Item4;
-            }
-            else if (entry.Value is Tuple<EventLogEntryType, DateTime, string, int> TValue)
-            {
-                // Manually unpack the tuple and add the items to the worksheet
-                worksheet.Cells[row, 2].Value = TValue.Item1;
-                worksheet.Cells[row, 3].Value = TValue.Item2;
-                worksheet.Cells[row, 4].Value = TValue.Item3;
-                worksheet.Cells[row, 5].Value = TValue.Item4;
-            }
-            else if (entry.Value is ValueTuple<string, string> valueTuple)
-            {
-                // Manually unpack the value tuple and add the items to the worksheet
-                worksheet.Cells[row, 2].Value = valueTuple.Item1;
-                worksheet.Cells[row, 3].Value = valueTuple.Item2;
-            }
-            else
-            {
-                // Convert the value to a string and add it to the second column of the current row
-                worksheet.Cells[row, 2].Value = entry.Value.ToString();
-            }
-
-            // Increment the row counter
-            row++;
-        }
-    }
-
-    public static Dictionary<string, Tuple<EventLogEntryType, DateTime, string,int>> GetLog1034()
-    {
-        // Initialize the dictionary to store the results
-        Dictionary<string, Tuple<EventLogEntryType, DateTime, string,int>> resultDict = new Dictionary<string, Tuple<EventLogEntryType, DateTime, string,int>>();
-
-        // Define the log we'll be reading from
-        string logType = "Application"; // Adjust as needed
-
-        // Read the event log
-        EventLog eventLog = new EventLog(logType);
-
-        // Go through each entry in the event log
-        foreach (EventLogEntry logEntry in eventLog.Entries)
-        {
-            // Filter for Event ID 1034 (Use InstanceId instead of deprecated EventID)
-            if (logEntry.EventID == 1034)
-            {
-                // Add details to the dictionary
-                resultDict[logEntry.Message] = Tuple.Create(logEntry.EntryType, logEntry.TimeGenerated, logEntry.Source, logEntry.EventID);
-            }
-        }
-
-     
-
-        return resultDict;
-    }
-
+      }
 }
 
 
 
 
 
-
+  
 
 
 
