@@ -39,13 +39,12 @@ namespace ShowApp
                     worksheet.Cells[row, 4].Value = tupleValue.Item3;
                     worksheet.Cells[row, 5].Value = tupleValue.Item4;
                 }
-                else if (entry.Value is Tuple<EventLogEntryType, DateTime, string, int> TValue)
+                else if (entry.Value is Tuple<DateTime, string, int> logValue)
                 {
                     // Manually unpack the tuple and add the items to the worksheet
-                    worksheet.Cells[row, 2].Value = TValue.Item1;
-                    worksheet.Cells[row, 3].Value = TValue.Item2;
-                    worksheet.Cells[row, 4].Value = TValue.Item3;
-                    worksheet.Cells[row, 5].Value = TValue.Item4;
+                    worksheet.Cells[row, 2].Value = logValue.Item1;
+                    worksheet.Cells[row, 3].Value = logValue.Item2;
+                    worksheet.Cells[row, 4].Value = logValue.Item3;
                 }
                 else if (entry.Value is ValueTuple<string, string> valueTuple)
                 {

@@ -12,10 +12,10 @@ namespace ShowApp
     {
        
 
-        public static Dictionary<string, Tuple<EventLogEntryType, DateTime, string, int>> GetLog1034()
+        public static Dictionary<string, Tuple<DateTime, string, int>> GetLog1034()
         {
             // Initialize the dictionary to store the results
-            Dictionary<string, Tuple<EventLogEntryType, DateTime, string, int>> resultDict = new Dictionary<string, Tuple<EventLogEntryType, DateTime, string, int>>();
+            Dictionary<string, Tuple< DateTime, string, int>> resultDict = new Dictionary<string, Tuple< DateTime, string, int>>();
 
             // Define the log we'll be reading from
             string logType = "Application"; // Adjust as needed
@@ -30,16 +30,32 @@ namespace ShowApp
                 if (logEntry.EventID == 1034)
                 {
                     // Add details to the dictionary
-                    resultDict[logEntry.Message] = Tuple.Create(logEntry.EntryType, logEntry.TimeGenerated, logEntry.Source, logEntry.EventID);
+                    resultDict[GetNameFromMessage(logEntry.Message)] = Tuple.Create( logEntry.TimeGenerated, logEntry.Source, logEntry.EventID);
                 }
             }
-
-
 
             return resultDict;
         }
 
-  
+        public static string GetNameFromMessage(string message)
+        {
+            string productNamePrefix = "שם המוצר: ";
+            string productNameSuffix = ". גירסת המוצר";
+
+            int startIndex = message.IndexOf(productNamePrefix) + productNamePrefix.Length;
+            int endIndex = message.IndexOf(productNameSuffix);
+
+            if (startIndex > -1 && endIndex > -1)
+            {
+                string productName = message.Substring(startIndex, endIndex - startIndex);
+                return productName;
+            }
+            else
+            {
+                return message;
+            }
+
+        }
 
         public static void CollectAppDetails(string path, Dictionary<string, Tuple<string, DateTime, long>> appDetails)
         {
