@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 
 class WinApi
 {
+
     [DllImport("msi.dll", CharSet = CharSet.Unicode)]
     static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
 
     [DllImport("msi.dll", SetLastError = true)]
     static extern Int32 MsiGetProductInfo(string product, string property, StringBuilder valueBuf, ref Int32 len);
-
 
 
     public static Dictionary<string, Tuple<string, string, string, string>> GetAppsUsingAPI()
@@ -81,4 +81,8 @@ class WinApi
 
         
     }
+
+
+   
+
 }

@@ -12,7 +12,7 @@ namespace ShowApp
     {
        
 
-        public static Dictionary<string, Tuple<DateTime, string, int>> GetLog1034()
+        public static Dictionary<string, Tuple<DateTime, string, int>> GetLog(int eventID)
         {
             // Initialize the dictionary to store the results
             Dictionary<string, Tuple< DateTime, string, int>> resultDict = new Dictionary<string, Tuple< DateTime, string, int>>();
@@ -26,18 +26,23 @@ namespace ShowApp
             // Go through each entry in the event log
             foreach (EventLogEntry logEntry in eventLog.Entries)
             {
-                // Filter for Event ID 1034 (Use InstanceId instead of deprecated EventID)
-                if (logEntry.EventID == 1034)
+                // Filter for Event ID  (Use InstanceId instead of deprecated EventID)
+                if ((logEntry.EventID == eventID) && (eventID == 1034))
                 {
                     // Add details to the dictionary
-                    resultDict[GetNameFromMessage(logEntry.Message)] = Tuple.Create( logEntry.TimeGenerated, logEntry.Source, logEntry.EventID);
+                    resultDict[GetNameFromMessageHebrew(logEntry.Message)] = Tuple.Create(logEntry.TimeGenerated, logEntry.Source, logEntry.EventID);
+                }
+                else if ((logEntry.EventID == eventID) && (eventID == 11707))
+                {
+                    resultDict[GetNameFromMessage(logEntry.Message)] = Tuple.Create(logEntry.TimeGenerated, logEntry.Source, logEntry.EventID);
+
                 }
             }
 
             return resultDict;
         }
 
-        public static string GetNameFromMessage(string message)
+        public static string GetNameFromMessageHebrew(string message)
         {
             string productNamePrefix = "שם המוצר: ";
             string productNameSuffix = ". גירסת המוצר";
@@ -56,6 +61,45 @@ namespace ShowApp
             }
 
         }
+
+        public static string GetNameFromMessage(string message)
+        {
+            // Hebrew prefixes and suffixes
+            string productNamePrefixHeb = "מוצר: ";
+            string productNameSuffixHeb = "-- ההתקנה הושלמה בהצלחה.";
+
+            // English prefixes and suffixes
+            string productNamePrefixEng = "Product: ";
+            string productNameSuffixEng = " -- Installation completed successfully.";
+
+            // Detect language and set prefix and suffix accordingly
+            string productNamePrefix, productNameSuffix;
+
+            if (message.Contains(productNamePrefixHeb))
+            {
+                productNamePrefix = productNamePrefixHeb;
+                productNameSuffix = productNameSuffixHeb;
+            }
+            else
+            {
+                productNamePrefix = productNamePrefixEng;
+                productNameSuffix = productNameSuffixEng;
+            }
+
+            int startIndex = message.IndexOf(productNamePrefix) + productNamePrefix.Length;
+            int endIndex = message.IndexOf(productNameSuffix);
+
+            if (startIndex > -1 && endIndex > -1)
+            {
+                string productName = message.Substring(startIndex, endIndex - startIndex);
+                return productName;
+            }
+            else
+            {
+                return message;
+            }
+        }
+
 
         public static void CollectAppDetails(string path, Dictionary<string, Tuple<string, DateTime, long>> appDetails)
         {

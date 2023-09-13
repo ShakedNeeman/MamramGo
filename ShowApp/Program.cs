@@ -42,7 +42,9 @@ do
             Dictionary<string, (string Version, string InstallLocation)> registryAppDetails = MyRegistry.GetAppByRegistry();
             Dictionary<string, Tuple<string, string, string, string>> appsByAppName = WinApi.GetAppsUsingAPI();
             Dictionary<string, string> uninstalledApps = MyRegistry.UninstallApp();
-            Dictionary<string, Tuple<DateTime, string, int>> myLog = Helper.GetLog1034();
+            Dictionary<string, Tuple<DateTime, string, int>> myLog1034 = Helper.GetLog(1034);
+            Dictionary<string, Tuple<DateTime, string, int>> myLog11707 = Helper.GetLog(11707);
+
 
             Dictionary<string, Tuple<string, DateTime, long>> appDetails = new Dictionary<string, Tuple<string, DateTime, long>>();
             Helper.CollectAppDetails("C:\\Program Files", appDetails);
@@ -60,13 +62,17 @@ do
                 // Add a worksheet for Registry app details
                 MyExcel.ExportToExcelSheet(registryAppDetails, "Registry", excel, new string[] { "App Name", "Version", "Install Location" });
 
-                MyExcel.ExportToExcelSheet(appsByAppName, "WIN API", excel, new string[] { "App Name", "packageCode", "Install Location", "installDate", "installedSize" });
+                MyExcel.ExportToExcelSheet(appsByAppName, "WIN API MSI", excel, new string[] { "App Name", "packageCode", "Install Location", "installDate", "installedSize" });
 
                 // Add a worksheet for Uninstalled apps
                 MyExcel.ExportToExcelSheet(uninstalledApps, "Uninstalled Apps", excel, new string[] { "App Name", "Status" });
 
-                // Add a worksheet for Event Viewer apps
-                MyExcel.ExportToExcelSheet(myLog, "Event Viewer Uninstalled Apps", excel, new string[] { "App Name", "Time Generated", "Source", "Event ID" });
+                // Add a worksheet for Event Viewer apps Event ID 1034
+                MyExcel.ExportToExcelSheet(myLog1034, "Event Viewer Uninstalled Apps", excel, new string[] { "App Name", "Time Generated", "Source", "Event ID" });
+
+                // Add a worksheet for Event Viewer apps Event ID 11707
+                MyExcel.ExportToExcelSheet(myLog11707, "Event Viewer Installed Apps", excel, new string[] { "App Name", "Time Generated", "Source", "Event ID" });
+
 
                 MyExcel.ExportToExcelSheet(appDetails, "App Folder", excel, new string[] { "App Name", "dir", "Time", "size" });
 
@@ -134,11 +140,12 @@ do
                     summaryWorksheet.Cells[1, 1].Value = "App Name";
                     summaryWorksheet.Cells[1, 2].Value = "Count";
                     summaryWorksheet.Cells[1, 3].Value = "WMI";
-                    summaryWorksheet.Cells[1, 4].Value = "WIN API";
+                    summaryWorksheet.Cells[1, 4].Value = "WIN API MSI";
                     summaryWorksheet.Cells[1, 5].Value = "Registry";
                     summaryWorksheet.Cells[1, 6].Value = "Uninstalled Apps";
                     summaryWorksheet.Cells[1, 7].Value = "Event Viewer Uninstalled Apps";
-                    summaryWorksheet.Cells[1, 8].Value = "App Folder";
+                    summaryWorksheet.Cells[1, 8].Value = "Event Viewer Installed Apps";
+                    summaryWorksheet.Cells[1, 9].Value = "App Folder";
 
 
 
@@ -157,7 +164,7 @@ do
                                     case "WMI":
                                         summaryWorksheet.Cells[summaryRow, 3].Value = 1;
                                         break;
-                                    case "WIN API":
+                                    case "WIN API MSI":
                                         summaryWorksheet.Cells[summaryRow, 4].Value = 1;
                                         break;
                                     case "Registry":
@@ -169,8 +176,11 @@ do
                                     case "Event Viewer Uninstalled Apps":
                                         summaryWorksheet.Cells[summaryRow, 7].Value = 1;
                                         break;
-                                    case "App Folder":
+                                    case "Event Viewer Installed Apps":
                                         summaryWorksheet.Cells[summaryRow, 8].Value = 1;
+                                        break;
+                                    case "App Folder":
+                                        summaryWorksheet.Cells[summaryRow, 9].Value = 1;
                                         break;
                                     default:
                                         break;
