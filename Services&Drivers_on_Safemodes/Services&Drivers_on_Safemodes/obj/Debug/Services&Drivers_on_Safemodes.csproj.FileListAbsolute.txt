@@ -63,3 +63,10 @@ C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drive
 C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\obj\Debug\Services&Drivers_on_Safemodes.csproj.CopyComplete
 C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\obj\Debug\Services&Drivers_on_Safemodes.exe
 C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\obj\Debug\Services&Drivers_on_Safemodes.pdb
+C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\bin\Debug\Windows.winmd
+C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\bin\Debug\EPPlus.dll
+C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\bin\Debug\EPPlus.Interfaces.dll
+C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\bin\Debug\EPPlus.System.Drawing.dll
+C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\bin\Debug\Microsoft.IO.RecyclableMemoryStream.dll
+C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\bin\Debug\EPPlus.xml
+C:\Users\guywe\source\repos\Plasma Security\ShakedNeeman\MamramGo\Services&Drivers_on_Safemodes\Services&Drivers_on_Safemodes\bin\Debug\Microsoft.IO.RecyclableMemoryStream.xml

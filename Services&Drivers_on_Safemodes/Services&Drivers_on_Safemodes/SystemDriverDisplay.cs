@@ -1,6 +1,7 @@
 ﻿using System.Management;
 using System;
 using System.IO;
+using OfficeOpenXml;
 
 public class SystemDriverDisplay
 {
@@ -46,5 +47,43 @@ public class SystemDriverDisplay
             Console.WriteLine("---------------------------------------");
         }
         return count;
+    }
+    public void SaveToWorksheet(ExcelWorksheet worksheet)
+    {
+        int count = 0;
+        int row = 1;
+
+        worksheet.Cells[row, 1].Value = "Driver Name";
+        worksheet.Cells[row, 2].Value = "Path";
+        worksheet.Cells[row, 3].Value = "File Name";
+
+        ManagementScope scope = new ManagementScope("\\\\.\\ROOT\\cimv2");
+        ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_SystemDriver WHERE State = 'Running'");
+        ManagementObjectSearcher searcher = new ManagementObjectSearcher(scope, query);
+        ManagementObjectCollection queryCollection = searcher.Get();
+
+        foreach (ManagementObject m in queryCollection)
+        {
+            string fullPath = m["PathName"]?.ToString();
+            string directory;
+            string fileName;
+            try
+            {
+                directory = fullPath != null ? Path.GetDirectoryName(fullPath) : "N/A";
+                fileName = fullPath != null ? Path.GetFileName(fullPath) : "N/A";
+            }
+            catch (ArgumentException)
+            {
+                directory = "Error: Invalid path format";
+                fileName = "Error: Invalid path format";
+            }
+
+            row++;
+            worksheet.Cells[row, 1].Value = m["Name"];
+            worksheet.Cells[row, 2].Value = directory;
+            worksheet.Cells[row, 3].Value = fileName;
+
+            count++;
+        }
     }
 }
