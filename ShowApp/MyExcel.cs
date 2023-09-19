@@ -60,6 +60,13 @@ namespace ShowApp
                     worksheet.Cells[row, 4].Value = appValue.Item3;
 
                 }
+                else if (entry.Value is Tuple< DateTime, long> storeValue)
+                {
+                    // Manually unpack the tuple and add the items to the worksheet
+                    worksheet.Cells[row, 2].Value = storeValue.Item1;
+                    worksheet.Cells[row, 3].Value = storeValue.Item2;
+
+                }
                 else
                 {
                     // Convert the value to a string and add it to the second column of the current row

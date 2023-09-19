@@ -1,0 +1,8 @@
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.csproj.AssemblyReference.cache
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.csproj.SuggestedBindingRedirects.cache
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.exe.config
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.csproj.ResolveComReference.cache
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.AssemblyInfoInputs.cache
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.AssemblyInfo.cs
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net472\ShowApp.csproj.CoreCompileInputs.cache

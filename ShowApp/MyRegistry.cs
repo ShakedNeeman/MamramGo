@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System.Globalization;
 using System.Management;
 
 namespace ShowApp
@@ -7,10 +8,10 @@ namespace ShowApp
     {
 
         // Fetch installed apps from Registry and return them as a dictionary
-        public static Dictionary<string, (string Version, string InstallLocation)> GetAppByRegistry()
+        public static Dictionary<string, Tuple<string, string>> GetAppByRegistry()
         {
             // Initialize a dictionary to hold application details
-            Dictionary<string, (string Version, string InstallLocation)> appDetails = new Dictionary<string, (string, string)>();
+            Dictionary<string, Tuple<string, string>> appDetails = new Dictionary<string, Tuple<string, string>>();
 
             try
             {
@@ -39,7 +40,7 @@ namespace ShowApp
 
                             if (appVersionString != null || installLocationString != null)
                             {
-                                appDetails[appName.ToString()] = (appVersionString, installLocationString);
+                                appDetails[appName.ToString()] = new Tuple<string, string>(appVersionString, installLocationString);
                             }
                         }
                     }
@@ -57,10 +58,10 @@ namespace ShowApp
 
 
 
-        public static Dictionary<string, string> UninstallApp()
+        public static Dictionary<string, Tuple<string>> UninstallApp()
         {
             // Initialize a dictionary to hold uninstalled application details
-            Dictionary<string, string> uninstalledApps = new Dictionary<string, string>();
+            Dictionary<string, Tuple<string>> uninstalledApps = new Dictionary<string, Tuple<string>>();
 
             // Open the Registry key where installed apps are listed
             RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
@@ -78,11 +79,7 @@ namespace ShowApp
                     object appName = subKey.GetValue("DisplayName");
                     object uninstallInfo = subKey.GetValue("UninstallString");
 
-                    // Add the details to the dictionary if app name exists but uninstall info doesn't
-                    if (appName != null && uninstallInfo == null)
-                    {
-                        uninstalledApps[appName.ToString()] = "Uninstalled";
-                    }
+                  
                 }
             }
 
@@ -90,5 +87,10 @@ namespace ShowApp
             return uninstalledApps;
         }
 
+
+
+
+
+
     }
-}
+    }

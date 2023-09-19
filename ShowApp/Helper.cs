@@ -1,10 +1,7 @@
-﻿using OfficeOpenXml;
+﻿using System.Diagnostics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Windows.Management.Deployment;
 
 namespace ShowApp
 {
@@ -103,17 +100,41 @@ namespace ShowApp
 
         public static void CollectAppDetails(string path, Dictionary<string, Tuple<string, DateTime, long>> appDetails)
         {
+            HashSet<string> ignoreList = new HashSet<string>
+        {
+          "Common Files",
+        "Microsoft Shared",
+        "Program Files",
+        "Program Files (x86)",
+        "Windows",
+        "System",
+        "System32",
+        "Users",
+        "Temp",
+        "AppData",
+        "NetHood",
+        "PrintHood",
+        "Recent",
+        "SendTo",
+        "Start Menu",
+        "Boot",
+        };
+
             try
             {
                 foreach (var dir in Directory.GetDirectories(path))
                 {
                     var dirInfo = new DirectoryInfo(dir);
+                    string appName = dirInfo.Name;
 
-                   
-                        string appName = dirInfo.Name;
-                        DateTime installDate = dirInfo.CreationTime;
-                        long size = GetDirectorySize(dirInfo);
+                    // Skip directories in the ignore list
+                    if (ignoreList.Contains(appName)) continue;
 
+                    DateTime installDate = dirInfo.CreationTime;
+                    long size = GetDirectorySize(dirInfo);
+
+                    if (ContainsExecutable(dirInfo))
+                    {
                         if (appDetails.ContainsKey(appName))
                         {
                             if (appDetails[appName].Item3 != size)
@@ -125,7 +146,7 @@ namespace ShowApp
                         {
                             appDetails[appName] = new Tuple<string, DateTime, long>(dir, installDate, size);
                         }
-                    
+                    }
                 }
             }
             catch (Exception e)
@@ -157,5 +178,68 @@ namespace ShowApp
 
             return size;
         }
+
+
+
+
+        public static Dictionary<string, Tuple<DateTime, long>> CollectAppDetailsStore()
+        {
+            // Initialize a dictionary to store details of installed UWP applications.
+            Dictionary<string, Tuple<DateTime, long>> appDetails = new Dictionary<string, Tuple<DateTime, long>>();
+
+            try
+            {
+                // Instantiate the PackageManager class to access UWP package information.
+                PackageManager packageManager = new PackageManager();
+
+                // Retrieve all packages for the current user, focusing on the main app packages.
+                // This excludes things like framework and resource packages.
+                var packages = packageManager.FindPackagesForUserWithPackageTypes(string.Empty, PackageTypes.Main);
+
+                foreach (var package in packages)
+                {
+                    // If the package is a framework, resource package, or bundle, skip it.
+                    if (package.IsFramework || package.IsResourcePackage || package.IsBundle)
+                    {
+                        continue;
+                    }
+
+                    // Check if the installation directory of the package contains "WindowsApps".
+                    if (package.InstalledLocation.Path.Contains("WindowsApps"))
+                    {
+                        // Get the application name.
+                        string appName = package.Id.Name;
+
+                        // Get the installation date.
+                        DateTime installDate = package.InstalledDate.LocalDateTime;
+
+                        // Placeholder for size as it's not easily accessible for UWP apps.
+                        long size = 0;
+
+                        // Update the dictionary with the new details.
+                        if (appDetails.ContainsKey(appName))
+                        {
+                            if (appDetails[appName].Item2 != size)
+                            {
+                                appDetails[appName] = new Tuple<DateTime, long>(installDate, size);
+                            }
+                        }
+                        else
+                        {
+                            appDetails[appName] = new Tuple<DateTime, long>(installDate, size);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // Log any exceptions.
+                Console.WriteLine($"Could not access the PackageManager: {e.Message}");
+            }
+
+            return appDetails;
+        }
+
+
     }
 }

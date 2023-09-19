@@ -1,0 +1,6 @@
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net5.0-windows10.0.19041.0\ShowApp.csproj.AssemblyReference.cache
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net5.0-windows10.0.19041.0\ShowApp.csproj.ResolveComReference.cache
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net5.0-windows10.0.19041.0\ShowApp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net5.0-windows10.0.19041.0\ShowApp.AssemblyInfoInputs.cache
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net5.0-windows10.0.19041.0\ShowApp.AssemblyInfo.cs
+C:\Users\Shaked Neeman\source\repos\ShowApp\ShowApp\obj\Debug\net5.0-windows10.0.19041.0\ShowApp.csproj.CoreCompileInputs.cache
