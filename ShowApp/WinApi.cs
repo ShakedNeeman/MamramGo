@@ -34,10 +34,10 @@ class WinApi
             string productName = GetProductInfo(code, "ProductName");
 
             // Fetch package code for the given product code
-            string packageCode = GetProductInfo(code, "PackageCode");
+            string packageCode = GetProductInfo(code, "PackageCode") as string;
 
             // Fetch install date for the given product code
-            string installDate = GetProductInfo(code, "InstallDate");
+            string installDate = GetProductInfo(code, "InstallDate") as string;
 
             // Fetch installed size for the given product code
             string installedSize = GetProductInfo(code, "InstalledSize");

@@ -5,6 +5,9 @@ using OfficeOpenXml;
 using System.Diagnostics;
 using ShowApp;
 using System.Collections.Generic;
+using PlasmaNGService.HealthCore;
+using System.Collections;
+using System.Xml;
 
 class Program
 {
@@ -20,8 +23,8 @@ bool continueMenu = true;
     do
     {
         Console.WriteLine("Enter a number to select a display operation method");
-        Console.WriteLine("1-Show All The App By WMI");
-        Console.WriteLine("2-Show All The App By Registry");
+        Console.WriteLine("1-My Plasma");
+        Console.WriteLine("2-Plasma");
         Console.WriteLine("3-Export To CSV After After Processing");
         Console.WriteLine("4-Export To CSV ");
 
@@ -35,15 +38,74 @@ bool continueMenu = true;
         switch (Number)
         {
             case 1:
-                WMI.GetAppByWMI(); // Assuming you have GetAppByWMI() defined as before                  
-                break;
+                    WindowsApps WindowsApps = new WindowsApps();
+
+
+                    List<WindowsApps> distinctInstall = WindowsApps.GetInstalledApps();
+                    List<WindowsApps> distinctUninstall = WindowsApps.GetUnInstalledApps();
+
+
+                    var resultPlasma = WindowsApps.CompareAndCleanAppLists(distinctInstall, distinctUninstall);
+                    var updatedAppsPlasma = resultPlasma.UpdatedApps;
+                    var removedAppsPlasma = resultPlasma.RemovedApps;
+                    updatedAppsPlasma = updatedAppsPlasma.Distinct(new WindowsApps.AppsNameComparer()).ToList();
+                    removedAppsPlasma = removedAppsPlasma.Distinct(new WindowsApps.AppsNameComparer()).ToList();
+                    var Unique = WindowsApps.GetUniqueApps(updatedAppsPlasma);
+
+
+                    using (var package = new ExcelPackage())
+                    {
+                        WindowsApps.ExportToWorksheet(package, "Distinct", updatedAppsPlasma);
+                        WindowsApps.ExportToWorksheet(package, "Removed", removedAppsPlasma);
+                        WindowsApps.ExportToWorksheet(package, "Unique", Unique);
+
+
+                        FileInfo fileInfo = new FileInfo("AppsDataByPlasmaD.xlsx");
+                        package.SaveAs(fileInfo);
+                        Console.WriteLine($"Excel file has been saved at: {fileInfo.FullName}");
+                        Console.WriteLine($"Total distinctInstall apps found: {distinctInstall.Count}");
+                        Console.WriteLine($"Total updatedAppsPlasma apps found: {updatedAppsPlasma.Count}");
+                        Console.WriteLine($"Total Unique apps found: {Unique.Count}");
+
+
+
+
+                    }
+
+
+                    break;
             case 2:
-                MyRegistry.GetAppByRegistry();
-                break;
+                    WindowsApps windowsApps = new WindowsApps();
+
+                    List<WindowsApps> registryApps = windowsApps.GetInstalledAppsRegistry("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+                    Console.WriteLine($"Found {registryApps.Count} apps using Registry method.");
+
+                    List<WindowsApps> registryApps64 = windowsApps.GetInstalledAppsRegistry("Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+                    Console.WriteLine($"Found {registryApps64.Count} apps using Registry 64 method.");
+
+                    List<WindowsApps> WMIApps = windowsApps.GetInstalledAppsWMI();
+                    Console.WriteLine($"Found {WMIApps.Count} apps using WMI method.");
+
+
+                    List<WindowsApps> distinctApps = windowsApps.GetInstalledApps();
+                    Console.WriteLine($"Total distinct apps found: {distinctApps.Count}");
+
+                    List<WindowsApps> overlappedApps = windowsApps.GetOverlapsApps();
+                    Console.WriteLine($"Total overlapped apps found: {overlappedApps.Count}");
+
+                    break;
             case 3:
                     // Get data from each function
                     Dictionary<string, Tuple<string, string, string, string>> wmiAppDetailsAPP = WMI.GetAppByWMI();
-                    Dictionary<string, Tuple<string,string>> registryAppDetailsAPP = MyRegistry.GetAppByRegistry();
+                    Dictionary<string, Tuple<string,string>> registryAppDetailsAPP = MyRegistry.GetAppByRegistry("Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+                    Dictionary<string, Tuple<string, string>> registr = MyRegistry.GetAppByRegistry("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+                    foreach (var pair in registr)
+                    {
+                        if (!registryAppDetailsAPP.ContainsKey(pair.Key))
+                        {
+                            registryAppDetailsAPP[pair.Key] = pair.Value;
+                        }
+                    }
                     Dictionary<string, Tuple<string, string, string, string>> appsByAppNameAPP = WinApi.GetAppsUsingAPI();
                     Dictionary<string,Tuple<string>> uninstalledApp = MyRegistry.UninstallApp();
                     Dictionary<string, Tuple<DateTime, string, int>> myLog1034APP = Helper.GetLog(1034);
@@ -59,7 +121,7 @@ bool continueMenu = true;
                     Helper.CollectAppDetails("C:\\ProgramData", appDetailsAPP);
 
                     WinApp[] wmiApps = WinApp.CreateFromWmiDetails(wmiAppDetailsAPP);
-                    WinApp[] registryApps = WinApp.CreateFromRegistry(registryAppDetailsAPP);
+                    WinApp[] registryApp = WinApp.CreateFromRegistry(registryAppDetailsAPP);
                     WinApp[] apiApps = WinApp.CreateFromAPI(appsByAppNameAPP);
                     WinApp[] logApps1034 = WinApp.CreateFromLogs(myLog1034APP);
                     WinApp[] logApps11707 = WinApp.CreateFromLogs(myLog11707APP);
@@ -77,13 +139,21 @@ bool continueMenu = true;
                     Console.WriteLine("total app that installed" + mergedUninstalledApps.Count);
 
                     Dictionary<string, WinApp> mergedInstalledApps = WinApp.MergeWinApps(
+                        registryApp,
                         wmiApps,
-                        registryApps,
                         apiApps,
                         logApps11707,
                         AppStore,
                         appFromStores
                     );
+                    Console.WriteLine("total app just installed appDetailsAPP " + appDetailsAPP.Count);
+                    Console.WriteLine("total app just installed wmiAppDetailsAPP " + wmiAppDetailsAPP.Count);
+                    Console.WriteLine("total app just installed API " + appsByAppNameAPP.Count);
+                    Console.WriteLine("total app just uninstalledApp " + uninstalledApp.Count);
+                    Console.WriteLine("total app just myLog1034APP " + myLog1034APP.Count);
+                    Console.WriteLine("total app just myLog11707APP " + myLog11707APP.Count);
+                    Console.WriteLine("total app just appFromStoreAPP " + appFromStoreAPP.Count);
+
 
                     Console.WriteLine("total app just installed " + mergedInstalledApps.Count);
 
@@ -92,11 +162,7 @@ bool continueMenu = true;
                     var removedApps = result.RemovedApps;
                     WinApp.ExportToExcel(updatedApps, removedApps);
 
-
-
-
-
-
+                
 
 
                     break;
@@ -105,8 +171,16 @@ bool continueMenu = true;
 
                 // Get data from each function
                 Dictionary<string, Tuple<string, string, string, string>> wmiAppDetails = WMI.GetAppByWMI();
-                Dictionary<string, Tuple<string, string>> registryAppDetails = MyRegistry.GetAppByRegistry();
-                Dictionary<string, Tuple<string, string, string, string>> appsByAppName = WinApi.GetAppsUsingAPI();
+                    Dictionary<string, Tuple<string, string>> registryAppDetails = MyRegistry.GetAppByRegistry("Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+                    Dictionary<string, Tuple<string, string>> registr2 = MyRegistry.GetAppByRegistry("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+                    foreach (var pair in registr2)
+                    {
+                        if (!registryAppDetails.ContainsKey(pair.Key))
+                        {
+                            registryAppDetails[pair.Key] = pair.Value;
+                        }
+                    }
+                    Dictionary<string, Tuple<string, string, string, string>> appsByAppName = WinApi.GetAppsUsingAPI();
                 Dictionary<string, Tuple<string>> uninstalledApps = MyRegistry.UninstallApp();
                 Dictionary<string, Tuple<DateTime, string, int>> myLog1034 = Helper.GetLog(1034);
                 Dictionary<string, Tuple<DateTime, string, int>> myLog11707 = Helper.GetLog(11707);

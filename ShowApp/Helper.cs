@@ -68,6 +68,7 @@ namespace ShowApp
             // English prefixes and suffixes
             string productNamePrefixEng = "Product: ";
             string productNameSuffixEng = " -- Installation completed successfully.";
+            string productNameSuffixEngB = " -- Installation operation completed successfully.";
 
             // Detect language and set prefix and suffix accordingly
             string productNamePrefix, productNameSuffix;
@@ -79,8 +80,16 @@ namespace ShowApp
             }
             else
             {
-                productNamePrefix = productNamePrefixEng;
-                productNameSuffix = productNameSuffixEng;
+                if (message.Contains(productNameSuffixEng))
+                {
+                    productNamePrefix = productNamePrefixEng;
+                    productNameSuffix = productNameSuffixEng;
+                }
+                else 
+                {
+                    productNamePrefix = productNamePrefixEng;
+                    productNameSuffix = productNameSuffixEngB;
+                }
             }
 
             int startIndex = message.IndexOf(productNamePrefix) + productNamePrefix.Length;
@@ -208,7 +217,7 @@ namespace ShowApp
                     if (package.InstalledLocation.Path.Contains("WindowsApps"))
                     {
                         // Get the application name.
-                        string appName = package.Id.Name;
+                        string appName = package.DisplayName;
 
                         // Get the installation date.
                         DateTime installDate = package.InstalledDate.LocalDateTime;

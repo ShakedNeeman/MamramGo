@@ -57,15 +57,7 @@ namespace ShowApp
                 {
                     if (unifiedWinApps.TryGetValue(winApp.AppName, out var existingWinApp))
                     {
-                        // Merge logic here
-                        if (winApp.Version != null) existingWinApp.Version = winApp.Version;
-                        if (winApp.PackageCode != null) existingWinApp.PackageCode = winApp.PackageCode;
-                        if (winApp.InstallLocation != null) existingWinApp.InstallLocation = winApp.InstallLocation;
-                        if (winApp.InstallState != null) existingWinApp.InstallState = winApp.InstallState;
-                        if (winApp.InstallDate != null) existingWinApp.InstallDate = winApp.InstallDate;
-                        if (winApp.InstalledSize != null) existingWinApp.InstalledSize = winApp.InstalledSize;
-                        if (winApp.EventID != null) existingWinApp.EventID = winApp.EventID;
-                        if (winApp.Source != null) existingWinApp.Source = winApp.Source;
+                       
                     }
                     else
                     {
@@ -123,7 +115,7 @@ namespace ShowApp
                 {
                     AppName = kv.Key,
                     Version = kv.Value.Item1,
-                    InstallLocation = kv.Value.Item2,
+                    InstallLocation = kv.Value.Item2 as string,
                     InstallState = kv.Value.Item3,
                 };
 

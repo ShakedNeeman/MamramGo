@@ -8,7 +8,7 @@ namespace ShowApp
     {
 
         // Fetch installed apps from Registry and return them as a dictionary
-        public static Dictionary<string, Tuple<string, string>> GetAppByRegistry()
+        public static Dictionary<string, Tuple<string, string>> GetAppByRegistry(string path)
         {
             // Initialize a dictionary to hold application details
             Dictionary<string, Tuple<string, string>> appDetails = new Dictionary<string, Tuple<string, string>>();
@@ -16,7 +16,7 @@ namespace ShowApp
             try
             {
                 // Open the Registry key where installed apps are listed
-                RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
+                RegistryKey key = Registry.LocalMachine.OpenSubKey(path);
 
                 // Loop through all subkeys to get app details
                 foreach (string subKeyName in key.GetSubKeyNames())
@@ -28,15 +28,19 @@ namespace ShowApp
                     if (subKey != null)
                     {
                         // Read app details from Registry values
-                        object appName = subKey.GetValue("DisplayName");
-                        object appVersion = subKey.GetValue("DisplayVersion");
-                        object installLocation = subKey.GetValue("InstallLocation");
+                        string appName = subKey.GetValue("DisplayName") as string;
+                        string appVersion = subKey.GetValue("DisplayVersion") as string;
+                        string installLocation = subKey.GetValue("InstallLocation") as string;
+                        if (string.IsNullOrEmpty(installLocation))
+                        {
+                            installLocation = subKey.GetValue("InstallSource") as string;
+                        }
 
                         // Add the details to the dictionary if app name exists
                         if (appName != null)
                         {
-                            string appVersionString = appVersion?.ToString();
-                            string installLocationString = installLocation?.ToString();
+                            string appVersionString = appVersion;
+                            string installLocationString = installLocation;
 
                             if (appVersionString != null || installLocationString != null)
                             {
